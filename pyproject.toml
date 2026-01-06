@@ -1,0 +1,36 @@
+[project]
+name = "pipecat-respeecher"
+version = "0.1.0"
+description = "Respeecher Space TTS plugin for Pipecat"
+license = "MIT"
+license-files = ["LICENSE"]
+readme = "README.md"
+requires-python = ">=3.10"
+keywords = ["tts", "pipecat-ai", "pipecat"]
+authors = [{
+    name = "Respeecher", email = "nv@respeecher.com"
+}]
+maintainers = [{
+    name = "Respeecher", email = "nv@respeecher.com"
+}]
+classifiers = [
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "pipecat-ai",
+    "respeecher>=1.1.9",
+]
+
+[tool.uv.sources]
+pipecat-ai = { git = "https://github.com/pipecat-ai/pipecat" }
+
+[project.urls]
+homepage = "https://respeecher.com"
+documentation = "https://space.respeecher.com/docs"
+source = "https://github.com/respeecher/pipecat-respeecher"
