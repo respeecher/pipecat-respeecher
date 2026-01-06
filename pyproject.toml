@@ -7,12 +7,12 @@ license-files = ["LICENSE"]
 readme = "README.md"
 requires-python = ">=3.10"
 keywords = ["tts", "pipecat-ai", "pipecat"]
-authors = [{
-    name = "Respeecher", email = "nv@respeecher.com"
-}]
-maintainers = [{
-    name = "Respeecher", email = "nv@respeecher.com"
-}]
+authors = [
+    {name = "Respeecher", email = "nv@respeecher.com"}
+]
+maintainers = [
+    {name = "Respeecher", email = "nv@respeecher.com"}
+]
 classifiers = [
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
