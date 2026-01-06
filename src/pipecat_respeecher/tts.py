@@ -28,7 +28,7 @@ from pipecat.frames.frames import (
     TTSStoppedFrame,
 )
 from pipecat.processors.frame_processor import FrameDirection
-from pipecat.services.tts_service import AudioContextTTSService
+from pipecat.services.tts_service import AudioContextTTSService, TTSService
 from pipecat.utils.tracing.service_decorators import traced_tts
 
 from respeecher.tts import (
@@ -43,7 +43,7 @@ from websockets.asyncio.client import connect as websocket_connect
 from websockets.protocol import State
 
 
-class RespeecherTTSService(AudioContextTTSService):
+class RespeecherTTSService(AudioContextTTSService, TTSService):
     """Respeecher Space TTS service with WebSocket streaming and audio contexts.
 
     Provides text-to-speech using Respeecher's streaming WebSocket API.
@@ -81,9 +81,11 @@ class RespeecherTTSService(AudioContextTTSService):
             sample_rate: Audio sample rate. If None, uses default.
             params: Additional input parameters for voice customization.
             aggregate_sentences: Whether to aggregate text into sentences client-side.
-            **kwargs: Additional arguments passed to the parent service.
+            **kwargs: Additional arguments passed to TTSService.
         """
-        super().__init__(
+        AudioContextTTSService.__init__(self, reconnect_on_error=False)
+        TTSService.__init__(
+            self,
             push_text_frames=False,
             pause_frame_processing=True,
             sample_rate=sample_rate,
@@ -218,6 +220,10 @@ class RespeecherTTSService(AudioContextTTSService):
         if self._websocket:
             return self._websocket
         raise Exception("Websocket not connected")
+
+    async def _report_error(self, error: ErrorFrame):
+        await self._call_event_handler("on_connection_error", error.error)
+        await self.push_error_frame(error)
 
     async def _handle_interruption(
         self, frame: StartInterruptionFrame, direction: FrameDirection
