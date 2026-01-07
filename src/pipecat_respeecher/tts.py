@@ -86,7 +86,6 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
         AudioContextTTSService.__init__(self, reconnect_on_error=False)
         TTSService.__init__(
             self,
-            push_text_frames=False,
             pause_frame_processing=True,
             sample_rate=sample_rate,
             aggregate_sentences=aggregate_sentences,
@@ -192,9 +191,16 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
             if self._websocket and self._websocket.state is State.OPEN:
                 return
             logger.debug("Connecting to Respeecher")
-            self._websocket = await websocket_connect(
-                f"{self._url}/{self._model_name}/tts/websocket?api_key={self._api_key}"
-            )
+
+            url = self._url.rstrip("/")
+            model_name = self._model_name.strip("/")
+
+            if model_name:
+                url += f"/{model_name}"
+
+            url += f"/tts/websocket?api_key={self._api_key}"
+
+            self._websocket = await websocket_connect(url)
             await self._call_event_handler("on_connected")
         except Exception as e:
             logger.error(f"{self} initialization error: {e}")
@@ -282,6 +288,7 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
                 continue
 
             if response.type == "done":
+                await self.push_frame(TTSStoppedFrame())
                 await self.stop_ttfb_metrics()
                 await self.remove_audio_context(response.context_id)
             elif response.type == "chunk":
