@@ -12,7 +12,7 @@ browser and speak with it. You can also deploy this bot to Pipecat Cloud.
 
 Required AI services:
 - Deepgram (Speech-to-Text)
-- Google (LLM)
+- Google or Cerebras (LLM)
 - Respeecher (Text-to-Speech)
 
 Run the bot using::
@@ -54,6 +54,7 @@ from pipecat.runner.types import RunnerArguments
 from pipecat.runner.utils import create_transport
 from pipecat.services.deepgram.stt import DeepgramSTTService
 from pipecat.services.cerebras.llm import CerebrasLLMService
+from pipecat.services.google.llm import GoogleLLMService
 from pipecat.transports.base_transport import BaseTransport, TransportParams
 from pipecat.transports.daily.transport import DailyParams
 from pipecat.turns.bot import TurnAnalyzerBotTurnStartStrategy
@@ -81,7 +82,15 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
         ),
     )
 
-    llm = CerebrasLLMService(api_key=os.getenv("CEREBRAS_API_KEY"), model="llama3.1-8b")
+    cerebras_api_key = os.getenv("CEREBRAS_API_KEY")
+    google_api_key = os.getenv("GOOGLE_API_KEY")
+
+    if cerebras_api_key:
+        llm = CerebrasLLMService(api_key=cerebras_api_key, model="llama3.1-8b")
+    elif google_api_key:
+        llm = GoogleLLMService(api_key=google_api_key)
+    else:
+        raise ValueError("Neither Google nor Cerebras API key is provided")
 
     messages = [
         {
@@ -104,6 +113,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
         ),
     )
 
+    # [Optional] Without RTVI, the chat interface in the WebRTC demo page won't work
     rtvi = RTVIProcessor(config=RTVIConfig(config=[]))
 
     pipeline = Pipeline(
@@ -118,6 +128,9 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
             context_aggregator.assistant(),  # Assistant spoken responses
         ]
     )
+
+    # [Optional] Whisker is a Pipecat debugger/visualizer
+    # https://github.com/pipecat-ai/whisker
     whisker = WhiskerObserver(pipeline)
 
     task = PipelineTask(

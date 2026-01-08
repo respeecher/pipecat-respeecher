@@ -27,10 +27,9 @@ dependencies = [
 ]
 
 [dependency-groups]
-debug = [
-    "pipecat-ai-whisker>=0.0.10",
-]
+debug = []
 dev = [
+    "pipecat-ai-whisker>=0.0.10",
     "pipecat-ai[daily,deepgram,google,local-smart-turn-v3,runner,silero,webrtc]",
 ]
 

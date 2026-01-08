@@ -2201,11 +2201,9 @@ dependencies = [
 ]
 
 [package.dev-dependencies]
-debug = [
-    { name = "pipecat-ai-whisker" },
-]
 dev = [
     { name = "pipecat-ai", extra = ["daily", "deepgram", "google", "local-smart-turn-v3", "runner", "silero", "webrtc"] },
+    { name = "pipecat-ai-whisker" },
 ]
 
 [package.metadata]
@@ -2215,8 +2213,11 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
-debug = [{ name = "pipecat-ai-whisker", specifier = ">=0.0.10" }]
-dev = [{ name = "pipecat-ai", extras = ["daily", "deepgram", "google", "local-smart-turn-v3", "runner", "silero", "webrtc"], git = "https://github.com/pipecat-ai/pipecat" }]
+debug = []
+dev = [
+    { name = "pipecat-ai", extras = ["daily", "deepgram", "google", "local-smart-turn-v3", "runner", "silero", "webrtc"], git = "https://github.com/pipecat-ai/pipecat" },
+    { name = "pipecat-ai-whisker", specifier = ">=0.0.10" },
+]
 
 [[package]]
 name = "propcache"
