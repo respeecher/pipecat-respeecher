@@ -68,7 +68,6 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
         url: str = "wss://api.respeecher.com/v1",
         sample_rate: Optional[int] = None,
         params: Optional[InputParams] = None,
-        aggregate_sentences: bool = False,
         **kwargs,
     ):
         """Initialize the Respeecher TTS service.
@@ -80,15 +79,14 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
             url: WebSocket base URL for Respeecher TTS API.
             sample_rate: Audio sample rate. If None, uses default.
             params: Additional input parameters for voice customization.
-            aggregate_sentences: Whether to aggregate text into sentences client-side.
             **kwargs: Additional arguments passed to TTSService.
         """
         AudioContextTTSService.__init__(self, reconnect_on_error=False)
         TTSService.__init__(
             self,
             pause_frame_processing=True,
+            aggregate_sentences=False,
             sample_rate=sample_rate,
-            aggregate_sentences=aggregate_sentences,
             **kwargs,
         )
 
@@ -127,12 +125,12 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
         await self._disconnect()
         await self._connect()
 
-    def _build_request(self, text: str, continue_transcript: bool = True):
+    def _build_request(self, text: Optional[str] = None):
         assert self._context_id is not None
 
         request: ContextfulGenerationRequestParams = {
-            "transcript": text,
-            "continue": continue_transcript,
+            "transcript": text or "",
+            "continue": text is not None,
             "context_id": self._context_id,
             "voice": {
                 "id": self._voice_id,
@@ -234,8 +232,8 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
     async def _handle_interruption(
         self, frame: StartInterruptionFrame, direction: FrameDirection
     ):
-        await super()._handle_interruption(frame, direction)
         await self.stop_all_metrics()
+
         if self._context_id:
             cancel_request = json.dumps(
                 {"context_id": self._context_id, "cancel": True}
@@ -260,7 +258,7 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
         if not self._context_id or not self._websocket:
             return
         logger.trace(f"{self}: flushing audio")
-        flush_request = self._build_request(text="", continue_transcript=False)
+        flush_request = self._build_request()
         await self._websocket.send(flush_request)
         self._context_id = None
 
@@ -328,7 +326,7 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
                 self._context_id = str(uuid.uuid4())
                 await self.create_audio_context(self._context_id)
 
-            generation_request = self._build_request(text=text)
+            generation_request = self._build_request(text)
 
             try:
                 await self._get_websocket().send(generation_request)
@@ -339,6 +337,7 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
                 await self._disconnect()
                 await self._connect()
                 return
+
             yield None
         except Exception as e:
             yield ErrorFrame(error=f"{self} exception: {e}")
