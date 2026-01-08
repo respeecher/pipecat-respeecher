@@ -52,12 +52,13 @@ from pipecat.processors.aggregators.llm_response_universal import (
 from pipecat.runner.types import RunnerArguments
 from pipecat.runner.utils import create_transport
 from pipecat.services.deepgram.stt import DeepgramSTTService
-from pipecat.services.google.llm import GoogleLLMService
+from pipecat.services.cerebras.llm import CerebrasLLMService
 from pipecat.transports.base_transport import BaseTransport, TransportParams
 from pipecat.transports.daily.transport import DailyParams
 from pipecat.turns.bot import TurnAnalyzerBotTurnStartStrategy
 from pipecat.turns.turn_start_strategies import TurnStartStrategies
 from pipecat_respeecher.tts import RespeecherTTSService
+from pipecat_whisker import WhiskerObserver
 
 logger.info("✅ All components loaded successfully!")
 
@@ -79,7 +80,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
         ),
     )
 
-    llm = GoogleLLMService(api_key=os.getenv("GOOGLE_API_KEY"))
+    llm = CerebrasLLMService(api_key=os.getenv("CEREBRAS_API_KEY"), model="llama3.1-8b")
 
     messages = [
         {
@@ -113,6 +114,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
             context_aggregator.assistant(),  # Assistant spoken responses
         ]
     )
+    whisker = WhiskerObserver(pipeline)
 
     task = PipelineTask(
         pipeline,
@@ -121,6 +123,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
             enable_usage_metrics=True,
         ),
         idle_timeout_secs=runner_args.pipeline_idle_timeout_secs,
+        observers=[whisker],
     )
 
     @transport.event_handler("on_client_connected")
