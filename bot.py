@@ -49,6 +49,7 @@ from pipecat.processors.aggregators.llm_response_universal import (
     LLMContextAggregatorPair,
     LLMUserAggregatorParams,
 )
+from pipecat.processors.frameworks.rtvi import RTVIConfig, RTVIObserver, RTVIProcessor
 from pipecat.runner.types import RunnerArguments
 from pipecat.runner.utils import create_transport
 from pipecat.services.deepgram.stt import DeepgramSTTService
@@ -103,9 +104,12 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
         ),
     )
 
+    rtvi = RTVIProcessor(config=RTVIConfig(config=[]))
+
     pipeline = Pipeline(
         [
             transport.input(),  # Transport user input
+            rtvi,
             stt,
             context_aggregator.user(),  # User responses
             llm,  # LLM
@@ -123,7 +127,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
             enable_usage_metrics=True,
         ),
         idle_timeout_secs=runner_args.pipeline_idle_timeout_secs,
-        observers=[whisker],
+        observers=[RTVIObserver(rtvi), whisker],
     )
 
     @transport.event_handler("on_client_connected")
