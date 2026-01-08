@@ -41,6 +41,9 @@ source = "https://github.com/respeecher/pipecat-respeecher"
 [tool.uv.sources]
 pipecat-ai = { git = "https://github.com/pipecat-ai/pipecat" }
 
+[tool.ruff.lint]
+ignore = ["E402"]
+
 [tool.setuptools.packages.find]
 where = ["src"]
 

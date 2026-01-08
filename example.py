@@ -59,7 +59,7 @@ from pipecat.transports.base_transport import BaseTransport, TransportParams
 from pipecat.transports.daily.transport import DailyParams
 from pipecat.turns.bot import TurnAnalyzerBotTurnStartStrategy
 from pipecat.turns.turn_start_strategies import TurnStartStrategies
-from pipecat_respeecher.tts import RespeecherTTSService
+from pipecat_respeecher import RespeecherTTSService
 from pipecat_whisker import WhiskerObserver
 
 logger.info("✅ All components loaded successfully!")
@@ -75,10 +75,13 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
     tts = RespeecherTTSService(
         api_key=os.getenv("RESPEECHER_API_KEY"),
         voice_id="samantha",
+        # [Optional] Sampling params overrides.
+        # Can be changed on the fly with TTSUpdateSettingsFrame,
+        # just like the model and the voice.
         params=RespeecherTTSService.InputParams(
             sampling_params={
-                # "temperature": 1000
-            }
+                "min_p": 0.01,
+            },
         ),
     )
 
@@ -113,7 +116,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
         ),
     )
 
-    # [Optional] Without RTVI, the chat interface in the WebRTC demo page won't work
+    # [Optional] Without RTVI, the chat interface in the WebRTC demo page won't work.
     rtvi = RTVIProcessor(config=RTVIConfig(config=[]))
 
     pipeline = Pipeline(
@@ -129,7 +132,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
         ]
     )
 
-    # [Optional] Whisker is a Pipecat debugger/visualizer
+    # [Optional] Whisker is a Pipecat debugger/visualizer.
     # https://github.com/pipecat-ai/whisker
     whisker = WhiskerObserver(pipeline)
 
