@@ -2,8 +2,8 @@
 
 This is an official Respeecher integration for [Pipecat](https://pipecat.ai).
 
-[Learn more about our real-time TTS API.](https://www.respeecher.com/real-time-tts-api)
-([Україномовна/Ukrainian TTS](https://www.respeecher.com/real-time-tts-api))
+[Learn more](https://www.respeecher.com/real-time-tts-api) about our real-time TTS API
+([Україномовна/Ukrainian TTS](https://www.respeecher.com/real-time-tts-api)).
 
 **Maintainer: [Respeecher](https://www.respeecher.com/)**
 
