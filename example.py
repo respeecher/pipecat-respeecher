@@ -75,7 +75,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
     tts = RespeecherTTSService(
         api_key=os.getenv("RESPEECHER_API_KEY"),
         voice_id="samantha",
-        # [Optional] Sampling params overrides.
+        # [Optional] Sampling parameters overrides.
         # Can be changed on the fly with TTSUpdateSettingsFrame,
         # just like the model and the voice.
         params=RespeecherTTSService.InputParams(

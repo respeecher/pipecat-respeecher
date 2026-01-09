@@ -34,7 +34,7 @@ dev = [
 ]
 
 [project.urls]
-homepage = "https://respeecher.com"
+homepage = "https://www.respeecher.com/real-time-tts-api"
 documentation = "https://space.respeecher.com/docs"
 source = "https://github.com/respeecher/pipecat-respeecher"
 
