@@ -1,4 +1,4 @@
-# Pipecat Respeecher Space Real-Time TTS Integration
+# Pipecat Respeecher Real-Time TTS Integration
 
 This is an official Respeecher integration for [Pipecat](https://pipecat.ai).
 

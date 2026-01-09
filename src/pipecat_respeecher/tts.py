@@ -5,7 +5,7 @@
 # SPDX-License-Identifier: BSD 2-Clause License
 #
 
-"""Respeecher Space text-to-speech service implementation."""
+"""Respeecher real-time text-to-speech service implementation."""
 
 import base64
 import json
@@ -44,7 +44,7 @@ from websockets.protocol import State
 
 
 class RespeecherTTSService(AudioContextTTSService, TTSService):
-    """Respeecher Space TTS service with WebSocket streaming and audio contexts.
+    """Respeecher real-time TTS service with WebSocket streaming and audio contexts.
 
     Provides text-to-speech using Respeecher's streaming WebSocket API.
     Supports audio context management and voice customization via sampling parameters.
