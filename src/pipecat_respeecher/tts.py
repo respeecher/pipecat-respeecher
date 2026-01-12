@@ -232,6 +232,7 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
     async def _handle_interruption(
         self, frame: StartInterruptionFrame, direction: FrameDirection
     ):
+        await super()._handle_interruption(frame, direction)
         await self.stop_all_metrics()
 
         if self._context_id:
@@ -273,9 +274,8 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
             if response.context_id is not None and not self.audio_context_available(
                 response.context_id
             ):
-                logger.error(
-                    f"{self} error, received {response.type} for unknown context_id: {response.context_id}"
-                )
+                # We don't need to log an error, getting here is expected
+                # and is how interruptions are handled in the superclass
                 continue
 
             if response.type == "error":
