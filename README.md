@@ -14,6 +14,7 @@ To be published.
 ## Running the Example
 
 [`example.py`](./example.py) is a complete Pipecat pipeline with Respeecher TTS.
+(See [`example-ukrainian.py`](./example-ukrainian.py) for a Ukrainian language pipeline.)
 You can use it as a starting point for your agent,
 or you can head over to [Example Snippets](#example-snippets)
 if you already have a pipeline and just want to switch TTS.
