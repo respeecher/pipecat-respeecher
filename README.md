@@ -1,5 +1,7 @@
 # Pipecat Respeecher Real-Time TTS Integration
 
+[![PyPI - Version](https://img.shields.io/pypi/v/pipecat-respeecher)](https://pypi.python.org/pypi/respeecher)
+
 This is an official Respeecher integration for [Pipecat](https://pipecat.ai).
 
 [Learn more](https://www.respeecher.com/real-time-tts-api) about our real-time TTS API
@@ -9,7 +11,9 @@ This is an official Respeecher integration for [Pipecat](https://pipecat.ai).
 
 ## Installation
 
-To be published.
+```
+pip install pipecat-respeecher
+```
 
 ## Running the Example
 
@@ -83,3 +87,7 @@ tts = RespeecherTTSService(
     voice_id="olesia-conversation",
 )
 ```
+
+## Compatibility
+
+This integration requires Pipecat v0.0.99 or newer and has been tested with v0.0.99.
