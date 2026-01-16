@@ -22,7 +22,7 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-    "pipecat-ai",
+    "pipecat-ai>=0.0.99",
     "respeecher>=1.1.9",
 ]
 
@@ -37,9 +37,6 @@ dev = [
 homepage = "https://www.respeecher.com/real-time-tts-api"
 documentation = "https://space.respeecher.com/docs"
 source = "https://github.com/respeecher/pipecat-respeecher"
-
-[tool.uv.sources]
-pipecat-ai = { git = "https://github.com/pipecat-ai/pipecat" }
 
 [tool.ruff.lint]
 ignore = ["E402"]

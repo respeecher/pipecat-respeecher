@@ -57,8 +57,10 @@ from pipecat.services.cerebras.llm import CerebrasLLMService
 from pipecat.services.google.llm import GoogleLLMService
 from pipecat.transports.base_transport import BaseTransport, TransportParams
 from pipecat.transports.daily.transport import DailyParams
-from pipecat.turns.bot import TurnAnalyzerBotTurnStartStrategy
-from pipecat.turns.turn_start_strategies import TurnStartStrategies
+from pipecat.turns.user_stop.turn_analyzer_user_turn_stop_strategy import (
+    TurnAnalyzerUserTurnStopStrategy,
+)
+from pipecat.turns.user_turn_strategies import UserTurnStrategies
 from pipecat_respeecher import RespeecherTTSService
 from pipecat_whisker import WhiskerObserver
 
@@ -106,9 +108,9 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
     context_aggregator = LLMContextAggregatorPair(
         context,
         user_params=LLMUserAggregatorParams(
-            turn_start_strategies=TurnStartStrategies(
-                bot=[
-                    TurnAnalyzerBotTurnStartStrategy(
+            user_turn_strategies=UserTurnStrategies(
+                stop=[
+                    TurnAnalyzerUserTurnStopStrategy(
                         turn_analyzer=LocalSmartTurnAnalyzerV3()
                     )
                 ]
