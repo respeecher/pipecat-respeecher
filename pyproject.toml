@@ -1,6 +1,6 @@
 [project]
 name = "pipecat-respeecher"
-version = "0.1.0"
+version = "0.1.1"
 description = "Respeecher real-time TTS plugin for Pipecat"
 license = "BSD-2-Clause"
 license-files = ["LICENSE"]
@@ -35,9 +35,9 @@ dev = [
 ]
 
 [project.urls]
-homepage = "https://www.respeecher.com/real-time-tts-api"
-documentation = "https://space.respeecher.com/docs"
-source = "https://github.com/respeecher/pipecat-respeecher"
+Homepage = "https://www.respeecher.com/real-time-tts-api"
+Documentation = "https://space.respeecher.com/docs"
+Source = "https://github.com/respeecher/pipecat-respeecher"
 
 [tool.ruff.lint]
 ignore = ["E402"]
