@@ -5,7 +5,7 @@ description = "Respeecher real-time TTS plugin for Pipecat"
 license = "BSD-2-Clause"
 license-files = ["LICENSE"]
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 keywords = ["tts", "pipecat-ai", "pipecat"]
 authors = [
     {name = "Respeecher", email = "nv@respeecher.com"}
@@ -16,6 +16,7 @@ maintainers = [
 classifiers = [
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
