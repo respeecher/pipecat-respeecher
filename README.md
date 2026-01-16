@@ -1,6 +1,6 @@
 # Pipecat Respeecher Real-Time TTS Integration
 
-[![PyPI - Version](https://img.shields.io/pypi/v/pipecat-respeecher)](https://pypi.python.org/pypi/respeecher)
+[![PyPI - Version](https://img.shields.io/pypi/v/pipecat-respeecher)](https://pypi.python.org/pypi/pipecat-respeecher)
 
 This is an official Respeecher integration for [Pipecat](https://pipecat.ai).
 
