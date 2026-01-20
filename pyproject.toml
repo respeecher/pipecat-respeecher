@@ -38,6 +38,7 @@ dev = [
 Homepage = "https://www.respeecher.com/real-time-tts-api"
 Documentation = "https://space.respeecher.com/docs"
 Source = "https://github.com/respeecher/pipecat-respeecher"
+Changelog = "https://github.com/respeecher/pipecat-respeecher/blob/main/CHANGELOG.md"
 
 [tool.ruff.lint]
 ignore = ["E402"]
