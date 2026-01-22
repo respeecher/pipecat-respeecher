@@ -143,6 +143,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
         params=PipelineParams(
             enable_metrics=True,
             enable_usage_metrics=True,
+            audio_out_sample_rate=22050,
         ),
         idle_timeout_secs=runner_args.pipeline_idle_timeout_secs,
         observers=[RTVIObserver(rtvi), whisker],
