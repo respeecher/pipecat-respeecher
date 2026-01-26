@@ -198,7 +198,14 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
 
             url += f"/tts/websocket?api_key={self._api_key}"
 
-            self._websocket = await websocket_connect(url)
+            self._websocket = await websocket_connect(
+                url,
+                compression=None,
+                ping_interval=2.5,
+                ping_timeout=2.5,
+                close_timeout=2,
+            )
+
             await self._call_event_handler("on_connected")
         except Exception as e:
             logger.error(f"{self} initialization error: {e}")
@@ -302,6 +309,7 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
         while True:
             await self._receive_messages_until_closed()
             logger.info(f"{self} Respeecher disconnected, reconnecting")
+            await self._disconnect_websocket()
             await self._connect_websocket()
 
     @traced_tts
