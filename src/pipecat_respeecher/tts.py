@@ -11,6 +11,7 @@ import base64
 import json
 import uuid
 from typing import AsyncGenerator, Optional
+import asyncio
 
 from loguru import logger
 from pydantic import BaseModel, TypeAdapter, ValidationError
@@ -349,3 +350,16 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
             yield None
         except Exception as e:
             yield ErrorFrame(error=f"{self} exception: {e}")
+
+    async def _handle_audio_context(self, context_id: str):
+        queue = self._contexts[context_id]
+        running = True
+        while running:
+            try:
+                frame = await asyncio.wait_for(queue.get(), timeout=10)
+                if frame:
+                    await self.push_frame(frame)
+                running = frame is not None
+            except asyncio.TimeoutError:
+                logger.trace(f"{self} time out on audio context {context_id}")
+                break
