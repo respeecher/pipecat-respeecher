@@ -114,6 +114,14 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
         """
         return True
 
+    async def start_processing_metrics(self) -> None:
+        # Processing metrics are almost meaningless in our case since run_tts
+        # is duplex and we don't do any text preprocessing by default.
+        pass
+
+    async def stop_processing_metrics(self) -> None:
+        pass
+
     async def set_model(self, model: str):
         """Set the TTS model.
 
@@ -323,7 +331,7 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
         Yields:
             Frame: Audio frames containing the synthesized speech.
         """
-        logger.debug(f"{self}: Generating TTS [{text}]")
+        logger.trace(f"{self}: Generating TTS [{text}]")
 
         try:
             if not self._websocket or self._websocket.state is State.CLOSED:
