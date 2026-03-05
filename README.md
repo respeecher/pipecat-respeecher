@@ -45,9 +45,6 @@ other [supported Pipecat service](https://docs.pipecat.ai/server/services/suppor
 
 ## Example Snippets
 
-**Note:** we recommend setting `audio_out_sample_rate=22050` in `PipelineParams`
-like in [`example.py`](./example.py) for best results.
-
 ### Minimal Example
 
 ```python
