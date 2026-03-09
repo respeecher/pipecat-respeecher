@@ -23,7 +23,7 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-    "pipecat-ai>=0.0.99",
+    "pipecat-ai>=0.0.104",
     "respeecher>=1.1.9",
 ]
 
