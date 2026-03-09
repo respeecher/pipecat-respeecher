@@ -10,7 +10,6 @@
 import asyncio
 import base64
 import json
-import uuid
 from typing import AsyncGenerator, Optional
 
 from loguru import logger
@@ -292,13 +291,13 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
 
             if response.type == "error":
                 logger.error(f"{self} error: {response}")
-                await self.push_frame(TTSStoppedFrame())
+                await self.push_frame(TTSStoppedFrame(context_id=response.context_id))
                 await self.stop_all_metrics()
                 await self.push_error(f"{self} error: {response.error}")
                 continue
 
             if response.type == "done":
-                await self.push_frame(TTSStoppedFrame())
+                await self.push_frame(TTSStoppedFrame(context_id=response.context_id))
                 await self.stop_ttfb_metrics()
                 await self.remove_audio_context(response.context_id)
             elif response.type == "chunk":
@@ -342,11 +341,11 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
             if not self._websocket or self._websocket.state is State.CLOSED:
                 await self._connect()
 
-            if not self._context_id:
+            if not self.has_active_audio_context():
                 await self.start_ttfb_metrics()
-                yield TTSStartedFrame()
-                self._context_id = str(uuid.uuid4())
-                await self.create_audio_context(self._context_id)
+                yield TTSStartedFrame(context_id=context_id)
+                if not self.audio_context_available(context_id):
+                    await self.create_audio_context(context_id)
 
             generation_request = self._build_request(text)
 
@@ -355,7 +354,7 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
                 await self.start_tts_usage_metrics(text)
             except Exception as e:
                 yield ErrorFrame(error=f"{self} error sending message: {e}")
-                yield TTSStoppedFrame()
+                yield TTSStoppedFrame(context_id=context_id)
                 await self._disconnect()
                 await self._connect()
                 return
