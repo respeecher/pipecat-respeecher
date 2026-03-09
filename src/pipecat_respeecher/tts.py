@@ -92,7 +92,7 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
             pause_frame_processing=True,
             text_aggregation_mode=TextAggregationMode.TOKEN,
             sample_rate=sample_rate,
-            settings=TTSSettings(model=model, voice=voice_id),
+            settings=TTSSettings(model=model, voice=voice_id, language=None),
             **kwargs,
         )
 
