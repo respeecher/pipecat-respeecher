@@ -87,7 +87,11 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
         """
         AudioContextTTSService.__init__(
             self,
-            reconnect_on_error=False,
+            # NOTE for Nazar: pre-0.0.104 code reconnected manually after receive-loop
+            # closure. With the shared Pipecat websocket lifecycle we enable
+            # framework-managed reconnects instead. Please confirm the new retry
+            # policy (3 attempts with backoff) is acceptable.
+            reconnect_on_error=True,
             pause_frame_processing=True,
             text_aggregation_mode=TextAggregationMode.TOKEN,
             sample_rate=sample_rate,
