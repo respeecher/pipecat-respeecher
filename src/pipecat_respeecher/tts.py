@@ -7,6 +7,7 @@
 
 """Respeecher real-time text-to-speech service implementation."""
 
+import asyncio
 import base64
 import json
 import uuid
@@ -85,9 +86,9 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
             params: Additional input parameters for voice customization.
             **kwargs: Additional arguments passed to TTSService.
         """
-        AudioContextTTSService.__init__(self, reconnect_on_error=False)
-        TTSService.__init__(
+        AudioContextTTSService.__init__(
             self,
+            reconnect_on_error=False,
             pause_frame_processing=True,
             text_aggregation_mode=TextAggregationMode.TOKEN,
             sample_rate=sample_rate,
@@ -105,7 +106,6 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
         }
         self._respeecher_settings = {"sampling_params": params.sampling_params}
 
-        self._context_id: str | None = None
         self._receive_task = None
 
     def can_generate_metrics(self) -> bool:
@@ -219,7 +219,7 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
             await self._call_event_handler("on_connected")
         except Exception as e:
             logger.error(f"{self} initialization error: {e}")
-            self._context_id = None
+            self.reset_active_audio_context()
             self._websocket = None
             await self._call_event_handler("on_connection_error", f"{e}")
 
@@ -233,7 +233,7 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
         except Exception as e:
             logger.error(f"{self} error closing websocket: {e}")
         finally:
-            self._context_id = None
+            self.reset_active_audio_context()
             self._websocket = None
             await self._call_event_handler("on_disconnected")
 
@@ -273,7 +273,7 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
         logger.trace(f"{self}: flushing audio")
         flush_request = self._build_request()
         await self._websocket.send(flush_request)
-        self._context_id = None
+        self.reset_active_audio_context()
 
     async def _receive_messages(self):
         async for message in self._get_websocket():
@@ -309,6 +309,22 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
                     num_channels=1,
                 )
                 await self.append_to_audio_context(response.context_id, frame)
+
+    async def _handle_audio_context(self, context_id: str):
+        AUDIO_CONTEXT_TIMEOUT = 10.0
+        queue = self._contexts[context_id]
+        running = True
+        while running:
+            try:
+                frame = await asyncio.wait_for(queue.get(), timeout=AUDIO_CONTEXT_TIMEOUT)
+                if frame is AudioContextTTSService._CONTEXT_KEEPALIVE:
+                    continue
+                if frame:
+                    await self.push_frame(frame)
+                running = frame is not None
+            except asyncio.TimeoutError:
+                logger.trace(f"{self} time out on audio context {context_id}")
+                break
 
     @traced_tts
     async def run_tts(self, text: str, context_id: str = "") -> AsyncGenerator[Frame | None, None]:
