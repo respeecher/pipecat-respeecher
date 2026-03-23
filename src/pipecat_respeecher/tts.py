@@ -213,6 +213,7 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
                 ping_interval=2.5,
                 ping_timeout=2.5,
                 close_timeout=2,
+                open_timeout=2,
             )
 
             await self._call_event_handler("on_connected")
