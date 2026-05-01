@@ -49,7 +49,6 @@ from pipecat.processors.aggregators.llm_response_universal import (
     LLMContextAggregatorPair,
     LLMUserAggregatorParams,
 )
-from pipecat.processors.frameworks.rtvi import RTVIConfig, RTVIObserver, RTVIProcessor
 from pipecat.runner.types import RunnerArguments
 from pipecat.runner.utils import create_transport
 from pipecat.services.deepgram.stt import DeepgramSTTService
@@ -76,11 +75,11 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
 
     tts = RespeecherTTSService(
         api_key=os.getenv("RESPEECHER_API_KEY"),
-        voice_id="marta",
-        # [Optional] Sampling parameters overrides.
-        # Can be changed on the fly with TTSUpdateSettingsFrame,
-        # just like the model and the voice.
-        params=RespeecherTTSService.InputParams(
+        settings=RespeecherTTSService.Settings(
+            voice="marta",
+            # [Optional] Sampling parameters overrides.
+            # Can be changed on the fly with TTSUpdateSettingsFrame,
+            # just like the model and the voice.
             sampling_params={
                 "min_p": 0.01,
             },
@@ -118,13 +117,9 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
         ),
     )
 
-    # [Optional] Without RTVI, the chat interface in the WebRTC demo page won't work.
-    rtvi = RTVIProcessor(config=RTVIConfig(config=[]))
-
     pipeline = Pipeline(
         [
             transport.input(),  # Transport user input
-            rtvi,
             stt,
             context_aggregator.user(),  # User responses
             llm,  # LLM
@@ -146,7 +141,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
             audio_out_sample_rate=22050,
         ),
         idle_timeout_secs=runner_args.pipeline_idle_timeout_secs,
-        observers=[RTVIObserver(rtvi), whisker],
+        observers=[whisker],
     )
 
     @transport.event_handler("on_client_connected")

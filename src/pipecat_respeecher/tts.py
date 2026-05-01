@@ -7,32 +7,30 @@
 
 """Respeecher real-time text-to-speech service implementation."""
 
-import asyncio
 import base64
 import json
 from typing import AsyncGenerator, Optional
+from dataclasses import dataclass, field
 
 from loguru import logger
-from pydantic import BaseModel, TypeAdapter, ValidationError
+from pydantic import TypeAdapter, ValidationError
 
+from pipecat.processors.frame_processor import FrameDirection
 from pipecat.frames.frames import (
     CancelFrame,
     EndFrame,
     ErrorFrame,
     Frame,
-    LLMFullResponseEndFrame,
     StartFrame,
     TTSAudioRawFrame,
-    TTSStartedFrame,
     TTSStoppedFrame,
+    LLMFullResponseEndFrame,
 )
-from pipecat.processors.frame_processor import FrameDirection
 from pipecat.services.tts_service import (
-    AudioContextTTSService,
-    TTSService,
+    WebsocketTTSService,
     TextAggregationMode,
 )
-from pipecat.services.settings import TTSSettings
+from pipecat.services.settings import NOT_GIVEN, TTSSettings, _NotGiven
 from pipecat.utils.tracing.service_decorators import traced_tts
 
 from respeecher.tts import (
@@ -47,59 +45,68 @@ from websockets.asyncio.client import connect as websocket_connect
 from websockets.protocol import State
 
 
-class RespeecherTTSService(AudioContextTTSService, TTSService):
+@dataclass
+class RespeecherTTSSettings(TTSSettings):
+    """Settings for RespeecherTTSService.
+
+    Parameters:
+        sampling_params: Sampling parameters used for speech synthesis.
+    """
+
+    sampling_params: SamplingParams | _NotGiven = field(
+        default_factory=lambda: NOT_GIVEN
+    )
+
+
+class RespeecherTTSService(WebsocketTTSService):
     """Respeecher real-time TTS service with WebSocket streaming and audio contexts.
 
     Provides text-to-speech using Respeecher's streaming WebSocket API.
     Supports audio context management and voice customization via sampling parameters.
     """
 
-    class InputParams(BaseModel):
-        """Input parameters for Respeecher TTS configuration.
-
-        Parameters:
-            sampling_params: Sampling parameters used for speech synthesis.
-        """
-
-        sampling_params: SamplingParams = {}
+    Settings = RespeecherTTSSettings
+    _settings: Settings
 
     def __init__(
         self,
         *,
         api_key: str,
-        voice_id: str,
-        model: str = "public/tts/en-rt",
+        settings: Settings,
         url: str = "wss://api.respeecher.com/v1",
-        sample_rate: Optional[int] = None,
-        params: Optional[InputParams] = None,
+        sample_rate: int | None = None,
         **kwargs,
     ):
         """Initialize the Respeecher TTS service.
 
         Args:
             api_key: Respeecher API key for authentication.
-            voice_id: ID of the voice to use for synthesis.
-            model: Model path for the Respeecher TTS API.
+            settings: Respeecher TTS settings (model, voice, sampling params)
             url: WebSocket base URL for Respeecher TTS API.
             sample_rate: Audio sample rate. If None, uses default.
-            params: Additional input parameters for voice customization.
-            **kwargs: Additional arguments passed to TTSService.
+            **kwargs: Additional arguments passed to WebsocketTTSService.
         """
-        AudioContextTTSService.__init__(
-            self,
-            # NOTE for Nazar: pre-0.0.104 code reconnected manually after receive-loop
-            # closure. With the shared Pipecat websocket lifecycle we enable
-            # framework-managed reconnects instead. Please confirm the new retry
-            # policy (3 attempts with backoff) is acceptable.
-            reconnect_on_error=True,
-            pause_frame_processing=True,
-            text_aggregation_mode=TextAggregationMode.TOKEN,
+        merged_settings = self.Settings(
+            model="public/tts/en-rt",
+            sampling_params={},
+            language=None,
+        )
+        merged_settings.apply_update(settings)
+
+        if merged_settings.model is None:
+            raise ValueError("Respeecher TTS requires a model path")
+
+        if merged_settings.voice is None:
+            raise ValueError("Respeecher TTS requires a voice ID")
+
+        super().__init__(
+            push_start_frame=True,
             sample_rate=sample_rate,
-            settings=TTSSettings(model=model, voice=voice_id, language=None),
+            settings=merged_settings,
+            text_aggregation_mode=TextAggregationMode.TOKEN,
+            stop_frame_timeout_s=10,
             **kwargs,
         )
-
-        params = params or RespeecherTTSService.InputParams()
 
         self._api_key = api_key
         self._url = url
@@ -107,7 +114,6 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
             "encoding": "pcm_s16le",
             "sample_rate": sample_rate or 0,
         }
-        self._respeecher_settings = {"sampling_params": params.sampling_params}
 
         self._receive_task = None
 
@@ -119,6 +125,7 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
         """
         return True
 
+    """
     async def start_processing_metrics(self) -> None:
         # Processing metrics are almost meaningless in our case since run_tts
         # is duplex and we don't do any text preprocessing by default.
@@ -126,25 +133,35 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
 
     async def stop_processing_metrics(self) -> None:
         pass
+    """
 
     async def _update_settings(self, delta):
+        if delta.model is None or delta.voice is None:
+            logger.warning("Respeecher TTS requires model and voice, skipping update")
+            return
+
         changed = await super()._update_settings(delta)
+
         if "model" in changed:
-            logger.info(f"Switching TTS model to: [{self._settings.model}]")
             await self._disconnect()
             await self._connect()
+        elif "voice" in changed and self._turn_context_id:
+            if self.audio_context_available(self._turn_context_id):
+                await self.flush_audio(context_id=self._turn_context_id)
+
+            self._turn_context_id = None
+            self._turn_context_id = self.create_context_id()
+
         return changed
 
-    def _build_request(self, text: Optional[str] = None):
-        assert self._context_id is not None
-
+    def _build_request(self, text: Optional[str] = None, *, context_id: str):
         request: ContextfulGenerationRequestParams = {
             "transcript": text or "",
             "continue": text is not None,
-            "context_id": self._context_id,
+            "context_id": context_id,
             "voice": {
                 "id": self._settings.voice,
-                "sampling_params": self._respeecher_settings["sampling_params"],
+                "sampling_params": self._settings.sampling_params,
             },
             "output_format": self._output_format,
         }
@@ -216,14 +233,15 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
                 compression=None,
                 ping_interval=2.5,
                 ping_timeout=2.5,
-                close_timeout=2,
-                open_timeout=2,
+                close_timeout=3,
+                open_timeout=3,
             )
 
             await self._call_event_handler("on_connected")
         except Exception as e:
-            logger.error(f"{self} initialization error: {e}")
-            self.reset_active_audio_context()
+            await self.push_error(
+                error_msg=f"Respeecher TTS initialization error: {e}", exception=e
+            )
             self._websocket = None
             await self._call_event_handler("on_connection_error", f"{e}")
 
@@ -235,9 +253,11 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
                 logger.debug("Disconnecting from Respeecher")
                 await self._websocket.close()
         except Exception as e:
-            logger.error(f"{self} error closing websocket: {e}")
+            await self.push_error(
+                error_msg=f"Respeecher TTS closing error: {e}", exception=e
+            )
         finally:
-            self.reset_active_audio_context()
+            await self.remove_active_audio_context()
             self._websocket = None
             await self._call_event_handler("on_disconnected")
 
@@ -250,13 +270,13 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
         await self.stop_all_metrics()
 
         if context_id:
-            cancel_request = json.dumps(
-                {"context_id": context_id, "cancel": True}
-            )
+            cancel_request = json.dumps({"context_id": context_id, "cancel": True})
             try:
                 await self._get_websocket().send(cancel_request)
             except Exception as e:
-                logger.warning(f"{self} error sending cancel: {e}")
+                logger.debug(f"Cannot cancel Respeecher context: {e}")
+
+        await super().on_audio_context_interrupted(context_id)
 
     async def process_frame(self, frame: Frame, direction: FrameDirection):
         """Process frames with context awareness.
@@ -270,21 +290,22 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
         if isinstance(frame, (LLMFullResponseEndFrame, EndFrame)):
             await self.flush_audio()
 
-    async def flush_audio(self):
+    async def flush_audio(self, context_id: str | None = None):
         """Flush any pending audio and finalize the current context."""
-        if not self._context_id or not self._websocket:
+        if not context_id or not self._websocket:
             return
-        logger.trace(f"{self}: flushing audio")
-        flush_request = self._build_request()
-        await self._websocket.send(flush_request)
-        self.reset_active_audio_context()
 
-    async def _receive_messages(self):
+        flush_request = self._build_request(context_id=context_id)
+        await self._websocket.send(flush_request)
+
+    async def _process_messages(self):
         async for message in self._get_websocket():
             try:
                 response = TypeAdapter(TTSResponse).validate_json(message)
             except ValidationError as e:
-                logger.error(f"{self} cannot parse message: {e}")
+                await self.push_error(
+                    error_msg=f"Invalid Respeecher TTS message: {e}", exception=e
+                )
                 continue
 
             if response.context_id is not None and not self.audio_context_available(
@@ -295,15 +316,21 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
                 continue
 
             if response.type == "error":
-                logger.error(f"{self} error: {response}")
-                await self.push_frame(TTSStoppedFrame(context_id=response.context_id))
                 await self.stop_all_metrics()
-                await self.push_error(f"{self} error: {response.error}")
+                await self.append_to_audio_context(
+                    response.context_id, TTSStoppedFrame(context_id=response.context_id)
+                )
+                await self.remove_audio_context(response.context_id)
+                await self.push_error(
+                    error_msg=f"Respeecher TTS error: {response.error}"
+                )
                 continue
 
             if response.type == "done":
-                await self.push_frame(TTSStoppedFrame(context_id=response.context_id))
                 await self.stop_ttfb_metrics()
+                await self.append_to_audio_context(
+                    response.context_id, TTSStoppedFrame(context_id=response.context_id)
+                )
                 await self.remove_audio_context(response.context_id)
             elif response.type == "chunk":
                 await self.stop_ttfb_metrics()
@@ -311,54 +338,39 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
                     audio=base64.b64decode(response.data),
                     sample_rate=self.sample_rate,
                     num_channels=1,
+                    context_id=response.context_id,
                 )
                 await self.append_to_audio_context(response.context_id, frame)
 
-    async def _handle_audio_context(self, context_id: str):
-        AUDIO_CONTEXT_TIMEOUT = 10.0
-        queue = self._contexts[context_id]
-        running = True
-        while running:
-            try:
-                frame = await asyncio.wait_for(queue.get(), timeout=AUDIO_CONTEXT_TIMEOUT)
-                if frame is AudioContextTTSService._CONTEXT_KEEPALIVE:
-                    continue
-                if frame:
-                    await self.push_frame(frame)
-                running = frame is not None
-            except asyncio.TimeoutError:
-                logger.trace(f"{self} time out on audio context {context_id}")
-                break
+    async def _receive_messages(self):
+        while True:
+            await self._process_messages()
+            await self._connect_websocket()
 
     @traced_tts
-    async def run_tts(self, text: str, context_id: str = "") -> AsyncGenerator[Frame | None, None]:
+    async def run_tts(
+        self, text: str, context_id: str
+    ) -> AsyncGenerator[Frame | None, None]:
         """Generate speech from text using Respeecher's streaming API.
 
         Args:
             text: The text to synthesize into speech.
+            context_id: The context ID for tracking audio frames.
 
         Yields:
             Frame: Audio frames containing the synthesized speech.
         """
-        logger.trace(f"{self}: Generating TTS [{text}]")
-
         try:
             if not self._websocket or self._websocket.state is State.CLOSED:
                 await self._connect()
 
-            if not self.has_active_audio_context():
-                await self.start_ttfb_metrics()
-                yield TTSStartedFrame(context_id=context_id)
-                if not self.audio_context_available(context_id):
-                    await self.create_audio_context(context_id)
-
-            generation_request = self._build_request(text)
+            generation_request = self._build_request(text, context_id=context_id)
 
             try:
                 await self._get_websocket().send(generation_request)
                 await self.start_tts_usage_metrics(text)
             except Exception as e:
-                yield ErrorFrame(error=f"{self} error sending message: {e}")
+                yield ErrorFrame(error=f"Respeecher TTS error: {e}")
                 yield TTSStoppedFrame(context_id=context_id)
                 await self._disconnect()
                 await self._connect()
@@ -366,4 +378,4 @@ class RespeecherTTSService(AudioContextTTSService, TTSService):
 
             yield None
         except Exception as e:
-            yield ErrorFrame(error=f"{self} exception: {e}")
+            yield ErrorFrame(error=f"Respeecher TTS error: {e}")
