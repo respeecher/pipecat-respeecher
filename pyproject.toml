@@ -5,7 +5,7 @@ description = "Respeecher real-time TTS plugin for Pipecat"
 license = "BSD-2-Clause"
 license-files = ["LICENSE"]
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 keywords = ["tts", "pipecat-ai", "pipecat"]
 authors = [
     {name = "Respeecher", email = "nv@respeecher.com"}
@@ -23,15 +23,15 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-    "pipecat-ai>=0.0.104",
+    "pipecat-ai>=1.1.0",
     "respeecher>=1.1.9",
 ]
 
 [dependency-groups]
 debug = []
 dev = [
-    "pipecat-ai-whisker>=0.0.10",
-    "pipecat-ai[daily,deepgram,google,local-smart-turn-v3,runner,silero,webrtc]",
+    "pipecat-ai-whisker>=1.0.0",
+    "pipecat-ai[daily,deepgram,google,local-smart-turn,runner,silero,webrtc]",
 ]
 
 [project.urls]
