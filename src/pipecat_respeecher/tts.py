@@ -51,11 +51,14 @@ class RespeecherTTSSettings(TTSSettings):
 
     Parameters:
         sampling_params: Sampling parameters used for speech synthesis.
+        add_to_context_delay_s:
+            Delay during which interruptions prevent responses from being added to context.
     """
 
     sampling_params: SamplingParams | _NotGiven = field(
         default_factory=lambda: NOT_GIVEN
     )
+    add_to_context_delay_s: float | _NotGiven = field(default_factory=lambda: NOT_GIVEN)
 
 
 class RespeecherTTSService(WebsocketTTSService):
@@ -89,6 +92,7 @@ class RespeecherTTSService(WebsocketTTSService):
         merged_settings = self.Settings(
             model="public/tts/en-rt",
             sampling_params={},
+            add_to_context_delay_s=1.5,
             language=None,
         )
         merged_settings.apply_update(settings)
@@ -101,10 +105,11 @@ class RespeecherTTSService(WebsocketTTSService):
 
         super().__init__(
             push_start_frame=True,
+            push_text_frames=False,
             sample_rate=sample_rate,
             settings=merged_settings,
-            text_aggregation_mode=TextAggregationMode.TOKEN,
             stop_frame_timeout_s=10,
+            text_aggregation_mode=TextAggregationMode.TOKEN,
             **kwargs,
         )
 
@@ -124,16 +129,6 @@ class RespeecherTTSService(WebsocketTTSService):
             True
         """
         return True
-
-    """
-    async def start_processing_metrics(self) -> None:
-        # Processing metrics are almost meaningless in our case since run_tts
-        # is duplex and we don't do any text preprocessing by default.
-        pass
-
-    async def stop_processing_metrics(self) -> None:
-        pass
-    """
 
     async def _update_settings(self, delta):
         if delta.model is None or delta.voice is None:
@@ -375,6 +370,10 @@ class RespeecherTTSService(WebsocketTTSService):
                 await self._disconnect()
                 await self._connect()
                 return
+
+            await self.add_word_timestamps(
+                [(text, self._settings.add_to_context_delay_s)], context_id
+            )
 
             yield None
         except Exception as e:
