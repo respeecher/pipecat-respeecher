@@ -91,7 +91,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
     )
 
     llm = OpenRouterLLMService(
-        api_key=os.getenv("OPEN_ROUTER_API_KEY"),
+        api_key=os.getenv("OPENROUTER_API_KEY"),
         settings=OpenRouterLLMService.Settings(
             model="openai/gpt-5.4-mini",
         ),

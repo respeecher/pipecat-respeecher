@@ -9,7 +9,7 @@
 
 import base64
 import json
-from typing import AsyncGenerator, Optional
+from typing import AsyncGenerator
 from dataclasses import dataclass, field
 
 from loguru import logger
@@ -145,12 +145,11 @@ class RespeecherTTSService(WebsocketTTSService):
             if self.audio_context_available(self._turn_context_id):
                 await self.flush_audio(context_id=self._turn_context_id)
 
-            self._turn_context_id = None
             self._turn_context_id = self.create_context_id()
 
         return changed
 
-    def _build_request(self, text: Optional[str] = None, *, context_id: str):
+    def _build_request(self, text: str | None = None, *, context_id: str):
         request: ContextfulGenerationRequestParams = {
             "transcript": text or "",
             "continue": text is not None,
