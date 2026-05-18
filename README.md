@@ -89,4 +89,4 @@ tts = RespeecherTTSService(
 
 ## Compatibility
 
-This integration requires Pipecat v0.0.99 or newer and has been tested with v0.0.99.
+This integration requires Pipecat v1.0.0 or newer and has been tested with v1.1.0.
