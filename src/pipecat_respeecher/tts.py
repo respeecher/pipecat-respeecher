@@ -16,6 +16,7 @@ from loguru import logger
 from pydantic import TypeAdapter, ValidationError
 
 from pipecat.frames.frames import (
+    AggregatedTextFrame,
     CancelFrame,
     EndFrame,
     ErrorFrame,
@@ -23,12 +24,16 @@ from pipecat.frames.frames import (
     StartFrame,
     TTSAudioRawFrame,
     TTSStoppedFrame,
+    TTSTextFrame,
 )
+from pipecat.processors.frame_processor import FrameDirection
 from pipecat.services.tts_service import (
     WebsocketTTSService,
     TextAggregationMode,
 )
 from pipecat.services.settings import NOT_GIVEN, TTSSettings, _NotGiven
+from pipecat.utils.string import match_endofsentence
+from pipecat.utils.text.base_text_aggregator import AggregationType
 from pipecat.utils.tracing.service_decorators import traced_tts
 
 from respeecher.tts import (
@@ -49,14 +54,11 @@ class RespeecherTTSSettings(TTSSettings):
 
     Parameters:
         sampling_params: Sampling parameters used for speech synthesis.
-        add_to_context_delay_s:
-            Delay during which interruptions prevent responses from being added to context.
     """
 
     sampling_params: SamplingParams | _NotGiven = field(
         default_factory=lambda: NOT_GIVEN
     )
-    add_to_context_delay_s: float | _NotGiven = field(default_factory=lambda: NOT_GIVEN)
 
 
 class RespeecherTTSService(WebsocketTTSService):
@@ -90,7 +92,6 @@ class RespeecherTTSService(WebsocketTTSService):
         merged_settings = self.Settings(
             model="public/tts/en-rt",
             sampling_params={},
-            add_to_context_delay_s=1.5,
             language=None,
         )
         merged_settings.apply_update(settings)
@@ -103,7 +104,6 @@ class RespeecherTTSService(WebsocketTTSService):
 
         super().__init__(
             push_start_frame=True,
-            push_text_frames=False,
             sample_rate=sample_rate,
             settings=merged_settings,
             stop_frame_timeout_s=10,
@@ -119,6 +119,9 @@ class RespeecherTTSService(WebsocketTTSService):
         }
 
         self._receive_task = None
+
+        self._unspoken_text_buffer: dict[str, str] = {}
+        self._spoken_text_buffer: dict[str, str] = {}
 
     def can_generate_metrics(self) -> bool:
         """Check if this service can generate processing metrics.
@@ -269,7 +272,53 @@ class RespeecherTTSService(WebsocketTTSService):
             except Exception as e:
                 logger.debug(f"Cannot cancel Respeecher context: {e}")
 
+        await self._flush_text_buffers(context_id)
         await super().on_audio_context_interrupted(context_id)
+
+    async def _flush_text_buffers(self, context_id: str):
+        for buffer, frame_cls in [
+            (self._unspoken_text_buffer, AggregatedTextFrame),
+            (self._spoken_text_buffer, TTSTextFrame),
+        ]:
+            text = buffer.pop(context_id, "")
+            if not text:
+                continue
+            frame = frame_cls(text, aggregated_by=AggregationType.SENTENCE)
+            frame.includes_inter_frame_spaces = True
+            frame.context_id = context_id
+            await super().push_frame(frame)
+
+    async def push_frame(
+        self, frame: Frame, direction: FrameDirection = FrameDirection.DOWNSTREAM
+    ):
+        if (
+            isinstance(frame, AggregatedTextFrame)
+            and direction == FrameDirection.DOWNSTREAM
+            and frame.aggregated_by == AggregationType.TOKEN
+            and frame.context_id
+        ):
+            is_tts = isinstance(frame, TTSTextFrame)
+            buffer = self._spoken_text_buffer if is_tts else self._unspoken_text_buffer
+            buffer[frame.context_id] = buffer.get(frame.context_id, "") + frame.text
+
+            if match_endofsentence(buffer[frame.context_id]):
+                buffered = buffer.pop(frame.context_id)
+                frame_cls = TTSTextFrame if is_tts else AggregatedTextFrame
+                sentence_frame = frame_cls(
+                    buffered, aggregated_by=AggregationType.SENTENCE
+                )
+                sentence_frame.includes_inter_frame_spaces = True
+                sentence_frame.context_id = frame.context_id
+                sentence_frame.append_to_context = frame.append_to_context
+
+                await super().push_frame(sentence_frame, direction)
+
+            return
+
+        if isinstance(frame, TTSStoppedFrame) and frame.context_id:
+            await self._flush_text_buffers(frame.context_id)
+
+        await super().push_frame(frame, direction)
 
     async def flush_audio(self, context_id: str | None = None):
         """Flush any pending audio and finalize the current context."""
@@ -359,10 +408,6 @@ class RespeecherTTSService(WebsocketTTSService):
                 await self._disconnect()
                 await self._connect()
                 return
-
-            await self.add_word_timestamps(
-                [(text, self._settings.add_to_context_delay_s)], context_id
-            )
 
             yield None
         except Exception as e:
