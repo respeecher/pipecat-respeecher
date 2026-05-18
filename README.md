@@ -51,7 +51,9 @@ from pipecat_respeecher import RespeecherTTSService
 
 tts = RespeecherTTSService(
     api_key=os.getenv("RESPEECHER_API_KEY"),
-    voice_id="samantha",
+    settings=RespeecherTTSService.Settings(
+        voice="samantha",
+    ),
 )
 ```
 
@@ -64,8 +66,8 @@ from pipecat_respeecher import RespeecherTTSService
 
 tts = RespeecherTTSService(
     api_key=os.getenv("RESPEECHER_API_KEY"),
-    voice_id="samantha",
-    params=RespeecherTTSService.InputParams(
+    settings=RespeecherTTSService.Settings(
+        voice="samantha",
         sampling_params={
             "min_p": 0.01,
         },
@@ -82,11 +84,13 @@ from pipecat_respeecher import RespeecherTTSService
 
 tts = RespeecherTTSService(
     api_key=os.getenv("RESPEECHER_API_KEY"),
-    model="public/tts/ua-rt",
-    voice_id="olesia-conversation",
+    settings=RespeecherTTSService.Settings(
+        voice="olesia-conversation",
+        model="public/tts/ua-rt",
+    ),
 )
 ```
 
 ## Compatibility
 
-This integration requires Pipecat v1.0.0 or newer and has been tested with v1.1.0.
+This integration requires Pipecat v1.1.0 or newer and has been tested with v1.1.0.
