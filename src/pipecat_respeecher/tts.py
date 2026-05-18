@@ -15,7 +15,6 @@ from dataclasses import dataclass, field
 from loguru import logger
 from pydantic import TypeAdapter, ValidationError
 
-from pipecat.processors.frame_processor import FrameDirection
 from pipecat.frames.frames import (
     CancelFrame,
     EndFrame,
@@ -24,7 +23,6 @@ from pipecat.frames.frames import (
     StartFrame,
     TTSAudioRawFrame,
     TTSStoppedFrame,
-    LLMFullResponseEndFrame,
 )
 from pipecat.services.tts_service import (
     WebsocketTTSService,
