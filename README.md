@@ -24,9 +24,8 @@ or you can head over to [Example Snippets](#example-snippets)
 if you already have a pipeline and just want to switch TTS.
 
 The complete pipeline example requires a
-[Deepgram](https://docs.pipecat.ai/server/services/stt/deepgram) API key for
-Speech-to-Text, either a [Google Gemini](https://docs.pipecat.ai/server/services/llm/gemini)
-API key or a [Cerebras](https://docs.pipecat.ai/server/services/llm/cerebras) API key for LLM,
+[Deepgram](https://docs.pipecat.ai/server/services/stt/deepgram) API key for Speech-to-Text,
+[OpenRouter](https://docs.pipecat.ai/server/services/llm/openrouter) API key for LLM,
 and a [Respeecher Space](https://space.respeecher.com/api-keys) API key.
 The Speech-to-Text and LLM services are just an example and can generally be swapped for any
 other [supported Pipecat service](https://docs.pipecat.ai/server/services/supported-services).
