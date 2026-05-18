@@ -273,20 +273,11 @@ class RespeecherTTSService(WebsocketTTSService):
 
         await super().on_audio_context_interrupted(context_id)
 
-    async def process_frame(self, frame: Frame, direction: FrameDirection):
-        """Process frames with context awareness.
-
-        Args:
-            frame: The frame to process.
-            direction: The direction of frame processing.
-        """
-        await super().process_frame(frame, direction)
-
-        if isinstance(frame, (LLMFullResponseEndFrame, EndFrame)):
-            await self.flush_audio()
-
     async def flush_audio(self, context_id: str | None = None):
         """Flush any pending audio and finalize the current context."""
+        if not context_id:
+            context_id = self.get_active_audio_context_id()
+
         if not context_id or not self._websocket:
             return
 
