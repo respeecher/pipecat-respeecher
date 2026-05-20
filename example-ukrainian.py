@@ -17,7 +17,7 @@ Required AI services:
 
 Run the bot using::
 
-    uv run bot.py
+    uv run example-ukrainian.py
 """
 
 import os
