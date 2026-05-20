@@ -1,0 +1,5 @@
+agent_name = "pipecat-respeecher"
+secret_set = "pipecat-respeecher-secrets"
+
+[scaling]
+min_agents = 0

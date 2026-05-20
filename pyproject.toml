@@ -32,6 +32,7 @@ debug = []
 dev = [
     "pipecat-ai-whisker>=1.0.0",
     "pipecat-ai[daily,deepgram,google,local-smart-turn,runner,silero,webrtc]",
+    "pipecat-ai-cli",
 ]
 
 [project.urls]
