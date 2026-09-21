@@ -280,7 +280,9 @@ class RespeecherTTSService(WebsocketTTSService):
             (self._spoken_text_buffer, TTSTextFrame),
         ]:
             text = buffer.pop(context_id, "")
-            if not text:
+            # Whitespace between sentences stays buffered until the next one
+            # starts, so a turn can end with nothing but whitespace here.
+            if not text.strip():
                 continue
             frame = frame_cls(text, aggregated_by=AggregationType.SENTENCE)
             frame.includes_inter_frame_spaces = True
@@ -298,19 +300,29 @@ class RespeecherTTSService(WebsocketTTSService):
         ):
             is_tts = isinstance(frame, TTSTextFrame)
             buffer = self._spoken_text_buffer if is_tts else self._unspoken_text_buffer
-            buffer[frame.context_id] = buffer.get(frame.context_id, "") + frame.text
+            frame_cls = TTSTextFrame if is_tts else AggregatedTextFrame
+            text = buffer.get(frame.context_id, "") + frame.text
 
-            if match_endofsentence(buffer[frame.context_id]):
-                buffered = buffer.pop(frame.context_id)
-                frame_cls = TTSTextFrame if is_tts else AggregatedTextFrame
+            # A token frame is one LLM delta, and some providers (Anthropic, for
+            # one) batch several tokens into a delta, so a single frame can carry
+            # the end of one sentence and the start of the next. Split at the
+            # boundary match_endofsentence reports instead of flushing the whole
+            # buffer, or the head of the next sentence gets glued onto this one.
+            while end := match_endofsentence(text):
                 sentence_frame = frame_cls(
-                    buffered, aggregated_by=AggregationType.SENTENCE
+                    text[:end], aggregated_by=AggregationType.SENTENCE
                 )
                 sentence_frame.includes_inter_frame_spaces = True
                 sentence_frame.context_id = frame.context_id
                 sentence_frame.append_to_context = frame.append_to_context
 
                 await super().push_frame(sentence_frame, direction)
+                text = text[end:]
+
+            if text:
+                buffer[frame.context_id] = text
+            else:
+                buffer.pop(frame.context_id, None)
 
             return
 
