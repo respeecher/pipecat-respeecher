@@ -221,10 +221,11 @@ class RespeecherTTSService(WebsocketTTSService):
             if model_name:
                 url += f"/{model_name}"
 
-            url += f"/tts/websocket?api_key={self._api_key}"
+            url += "/tts/websocket"
 
             self._websocket = await websocket_connect(
                 url,
+                additional_headers={"X-API-Key": self._api_key},
                 compression=None,
                 ping_interval=2.5,
                 ping_timeout=2.5,

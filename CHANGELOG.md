@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Send the API key in the WebSocket `X-API-Key` header instead of a query parameter.
+
+### Added
+
+- Document public models for Swedish, German, Brazilian Portuguese, and Arabic.
+
 ## [1.0.2] - 2026-09-21
 
 ### Fixed
