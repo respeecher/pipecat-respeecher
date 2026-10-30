@@ -31,7 +31,7 @@ from pipecat.services.tts_service import (
     WebsocketTTSService,
     TextAggregationMode,
 )
-from pipecat.services.settings import NOT_GIVEN, TTSSettings
+from pipecat.services.settings import NOT_GIVEN, TTSSettings, is_given
 from pipecat.utils.string import match_endofsentence
 from pipecat.utils.text.base_text_aggregator import AggregationType
 from pipecat.utils.tracing.service_decorators import traced_tts
@@ -101,10 +101,10 @@ class RespeecherTTSService(WebsocketTTSService):
         )
         merged_settings.apply_update(settings)
 
-        if merged_settings.model is None:
+        if not is_given(merged_settings.model) or merged_settings.model is None:
             raise ValueError("Respeecher TTS requires a model path")
 
-        if merged_settings.voice is None:
+        if not is_given(merged_settings.voice) or merged_settings.voice is None:
             raise ValueError("Respeecher TTS requires a voice ID")
 
         super().__init__(
