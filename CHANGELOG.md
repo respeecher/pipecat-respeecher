@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `ImportError` on pipecat-ai 1.8 and newer, which moved the settings sentinel type from `pipecat.services.settings._NotGiven` to `pipecat.utils.types.NotGiven`.
 
+## [1.1.0] - 2026-10-30
+
+### Fixed
+
+- Send the API key in the WebSocket `X-API-Key` header instead of a query parameter.
+
+### Added
+
+- Document public models for Swedish, German, Brazilian Portuguese, and Arabic.
+
 ## [1.0.2] - 2026-09-21
 
 ### Fixed
@@ -22,7 +32,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Update code snippets in the README to reflect the new API.
-
 
 ## [1.0.0] - 2026-05-18
 
