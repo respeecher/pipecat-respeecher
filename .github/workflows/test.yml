@@ -1,4 +1,4 @@
-name: Import check
+name: Test
 
 on:
   push:
@@ -10,17 +10,13 @@ on:
   workflow_dispatch:
 
 jobs:
-  import:
+  test:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         python-version: ["3.11", "3.12", "3.13", "3.14"]
-        pipecat-ai:
-          - "==1.1.0"
-          - "==1.7.0"
-          - "==1.8.0"
-          - ""
+        pipecat-ai: ${{ github.event_name == 'schedule' && fromJSON('[""]') || fromJSON('["==1.1.0", "==1.7.0", "==1.8.0", ""]') }}
     name: py${{ matrix.python-version }} pipecat-ai${{ matrix.pipecat-ai || ' latest' }}
     steps:
       - uses: actions/checkout@v7
@@ -31,6 +27,6 @@ jobs:
 
       - run: uv venv
 
-      - run: uv pip install "pipecat-ai${{ matrix.pipecat-ai }}" .
+      - run: uv pip install "pipecat-ai${{ matrix.pipecat-ai }}" . pytest pytest-asyncio
 
-      - run: .venv/bin/python -c "import pipecat_respeecher"
+      - run: .venv/bin/python -m pytest

@@ -33,6 +33,8 @@ dev = [
     "pipecat-ai-whisker>=1.0.0",
     "pipecat-ai[daily,deepgram,local-smart-turn,runner,silero,webrtc]",
     "pipecat-ai-cli",
+    "pytest>=8",
+    "pytest-asyncio>=1",
 ]
 
 [project.urls]
@@ -40,6 +42,10 @@ Homepage = "https://www.respeecher.com/real-time-tts-api"
 Documentation = "https://space.respeecher.com/docs"
 Source = "https://github.com/respeecher/pipecat-respeecher"
 Changelog = "https://github.com/respeecher/pipecat-respeecher/blob/main/CHANGELOG.md"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
 
 [tool.ruff.lint]
 ignore = ["E402"]
