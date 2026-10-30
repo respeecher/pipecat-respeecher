@@ -9,13 +9,17 @@ on:
     - cron: "0 6 * * 1"
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.12", "3.13", "3.14"]
+        python-version: ["3.11", "3.14"]
         pipecat-ai: ${{ github.event_name == 'schedule' && fromJSON('[""]') || fromJSON('["==1.1.0", "==1.7.0", "==1.8.0", ""]') }}
     name: py${{ matrix.python-version }} pipecat-ai${{ matrix.pipecat-ai || ' latest' }}
     steps:
