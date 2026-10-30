@@ -75,9 +75,22 @@ tts = RespeecherTTSService(
 )
 ```
 
-### Ukrainian Language Model
+### Supported Language Models
 
-See [Models & Languages](https://space.respeecher.com/docs/models-and-languages).
+Set `settings.model` to the public model path for your language:
+
+| Language | Model |
+| --- | --- |
+| English (default) | `public/tts/en-rt` |
+| Ukrainian | `public/tts/ua-rt` |
+| Swedish | `public/tts/sv-rt` |
+| German | `public/tts/de-rt` |
+| Brazilian Portuguese | `public/tts/pt-br-rt` |
+| Arabic | `public/tts/ar-rt` |
+
+Choose a voice available for the selected model. See
+[Models & Languages](https://space.respeecher.com/docs/models-and-languages).
+For example, to use Ukrainian:
 
 ```python
 from pipecat_respeecher import RespeecherTTSService
@@ -94,3 +107,5 @@ tts = RespeecherTTSService(
 ## Compatibility
 
 This integration requires Pipecat v1.1.0 or newer and has been tested with v1.1.0.
+WebSocket connections authenticate using the `X-API-Key` header; the API key is
+not included in the URL.
