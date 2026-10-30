@@ -1,0 +1,36 @@
+name: Import check
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+        pipecat-ai:
+          - "==1.1.0"
+          - "==1.7.0"
+          - "==1.8.0"
+          - ""
+    name: py${{ matrix.python-version }} pipecat-ai${{ matrix.pipecat-ai || ' latest' }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - run: uv venv
+
+      - run: uv pip install "pipecat-ai${{ matrix.pipecat-ai }}" .
+
+      - run: .venv/bin/python -c "import pipecat_respeecher"
