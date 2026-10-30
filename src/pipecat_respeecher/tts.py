@@ -31,7 +31,7 @@ from pipecat.services.tts_service import (
     WebsocketTTSService,
     TextAggregationMode,
 )
-from pipecat.services.settings import NOT_GIVEN, TTSSettings, _NotGiven
+from pipecat.services.settings import NOT_GIVEN, TTSSettings
 from pipecat.utils.string import match_endofsentence
 from pipecat.utils.text.base_text_aggregator import AggregationType
 from pipecat.utils.tracing.service_decorators import traced_tts
@@ -46,6 +46,11 @@ from respeecher.voices import (
 )
 from websockets.asyncio.client import connect as websocket_connect
 from websockets.protocol import State
+
+try:
+    from pipecat.utils.types import NotGiven as _NotGiven  # pipecat >= 1.8
+except ImportError:  # pipecat < 1.8 kept it in pipecat.services.settings
+    from pipecat.services.settings import _NotGiven
 
 
 @dataclass
